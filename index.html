@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專注力學習單 - 專業強化版</title>
+    <!-- 載入 Noto Serif TC 字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 React 核心 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 載入 Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 載入 html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* 全域字體端正 */
+        * { font-family: 'Noto Serif TC', serif !important; font-style: normal !important; }
+        body { background-color: #fff7ed; -webkit-tap-highlight-color: transparent; }
+        @media print { .no-print { display: none !important; } }
+        button { outline: none; }
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #fef3c7; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #ff8c42; border-radius: 10px; }
+
+        .dot-pop { animation: pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* 區塊標籤 */
+        .area-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            padding: 0 28px;
+            border-radius: 14px 14px 0 0;
+            font-weight: 900;
+            font-size: 15px;
+            color: white;
+            letter-spacing: 0.1em;
+            margin-bottom: -2px;
+            z-index: 10;
+        }
+
+        /* 統一按鈕 */
+        .unified-btn {
+            height: 56px;
+            border-radius: 16px;
+            font-weight: 900;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+            width: 100%;
+        }
+        .unified-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.12); }
+        
+        .toggle-container {
+            background-color: white;
+            border-radius: 16px;
+            padding: 4px;
+            border: 2px solid #f9ebbe;
+            display: flex;
+            height: 56px;
+            width: 100%;
+        }
+        .toggle-btn {
+            flex: 1;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .toggle-btn.active {
+            background-color: #ff8c42;
+            color: white;
+            box-shadow: 0 2px 4px rgba(255, 140, 66, 0.2);
+        }
+        .toggle-btn.inactive {
+            color: #433422; 
+            opacity: 0.6;
+        }
+
+        /* 懸浮數字鍵盤 */
+        .floating-keypad {
+            position: fixed;
+            z-index: 2000;
+            background: white;
+            border-radius: 1.5rem;
+            padding: 12px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            border: 4px solid #ff8c42;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, memo } = React;
+
+        const Icons = {
+            Info: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
+            X: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+            Sparkles: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 3 1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3Z" /></svg>,
+            RefreshCw: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
+            ImageIcon: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>,
+            CheckCircle: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            Eraser: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21Z"/><path d="m22 21-2 0"/><path d="m5 11 9 9"/></svg>
+        };
+
+        const GridComponent = memo(({ dots, onCellClick, isInteractive, num, isTarget, status, size, gameMode, exportMode = false }) => (
+            <div className={`flex flex-col gap-1 w-full ${exportMode ? 'max-w-[185px] mx-auto' : ''}`}>
+                <div className="flex justify-between items-center px-1">
+                    <span className="text-[12px] font-[900] text-stone-400 mb-1" style={{ transform: exportMode ? 'translateY(-6px)' : 'translateY(-2px)' }}>編號 0{num}</span>
+                    {status === 'correct' && <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tighter leading-none" style={{ transform: 'translateY(-2px)' }}>Correct</span>}
+                    {status === 'wrong' && <span className="text-[10px] font-bold text-rose-500 uppercase tracking-tighter leading-none" style={{ transform: 'translateY(-2px)' }}>Wrong</span>}
+                </div>
+                <div 
+                    className={`grid aspect-square border-2 border-stone-800 bg-white overflow-hidden rounded-xl transition-all shadow-sm
+                        ${size === 3 ? 'grid-cols-3' : 'grid-cols-4'}
+                        ${status === 'correct' ? 'ring-4 ring-emerald-100 border-emerald-500' : ''}
+                        ${status === 'wrong' ? 'ring-4 ring-rose-100 border-rose-500 shadow-lg' : ''}
+                    `}
+                >
+                    {dots.map((val, i) => (
+                        <div
+                            key={i}
+                            onClick={(e) => onCellClick && onCellClick(e, i)}
+                            className={`border-[0.5px] border-stone-100 flex items-center justify-center aspect-square h-full w-full
+                                ${isInteractive ? 'cursor-pointer hover:bg-orange-50 active:bg-orange-100' : ''}
+                            `}
+                        >
+                            {val !== null && (
+                                gameMode === 'circle' ? (
+                                    <div className="w-[70%] h-[70%] rounded-full dot-pop" style={{ backgroundColor: isTarget ? '#1c1917' : '#ff8c42' }} />
+                                ) : (
+                                    <span className={`font-black dot-pop leading-none flex items-center justify-center
+                                        ${size === 3 ? 'text-2xl sm:text-5xl' : 'text-xl sm:text-3xl'}
+                                        ${isTarget ? 'text-stone-800' : 'text-[#ff8c42]'}
+                                    `}>
+                                        {val}
+                                    </span>
+                                )
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ));
+
+        const App = () => {
+            const [gridSize, setGridSize] = useState(3); 
+            const [gameMode, setGameMode] = useState('circle'); 
+            const [targetGrids, setTargetGrids] = useState([]);
+            const [userGrids, setUserGrids] = useState([]);
+            const [isChecking, setIsChecking] = useState(false);
+            const [isExporting, setIsExporting] = useState(false);
+            const [showGuide, setShowGuide] = useState(false);
+            const [checkResult, setCheckResult] = useState(null);
+            const [activeKeypad, setActiveKeypad] = useState(null); 
+            const exportContainerRef = useRef(null);
+
+            const totalGrids = 6; 
+            const getRequiredCount = () => gridSize === 3 ? 5 : 9;
+
+            const generateNewGame = useCallback(() => {
+                const totalCells = gridSize * gridSize;
+                const requiredCount = getRequiredCount();
+                const newGrids = Array.from({ length: totalGrids }, () => {
+                    const grid = new Array(totalCells).fill(null);
+                    const indices = Array.from({ length: totalCells }, (_, i) => i).sort(() => Math.random() - 0.5);
+                    const chosenIndices = indices.slice(0, requiredCount);
+                    
+                    if (gameMode === 'circle') {
+                        chosenIndices.forEach(idx => grid[idx] = true);
+                    } else {
+                        const maxNum = gridSize === 3 ? 9 : 16;
+                        const numbers = Array.from({length: maxNum}, (_, i) => i + 1).sort(() => Math.random() - 0.5).slice(0, requiredCount);
+                        chosenIndices.forEach((idx, i) => grid[idx] = numbers[i]);
+                    }
+                    return grid;
+                });
+                setTargetGrids(newGrids);
+                setUserGrids(Array.from({ length: totalGrids }, () => new Array(totalCells).fill(null)));
+                setIsChecking(false);
+                setCheckResult(null);
+                setActiveKeypad(null);
+            }, [gridSize, gameMode]);
+
+            useEffect(() => { generateNewGame(); }, [generateNewGame]);
+
+            const handleCellInteraction = (event, gridIdx, cellIdx) => {
+                if (gameMode === 'circle') {
+                    const newUserGrids = [...userGrids];
+                    newUserGrids[gridIdx] = [...newUserGrids[gridIdx]];
+                    newUserGrids[gridIdx][cellIdx] = newUserGrids[gridIdx][cellIdx] === null ? true : null;
+                    setUserGrids(newUserGrids);
+                } else {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setActiveKeypad({ gridIdx, cellIdx, rect });
+                }
+            };
+
+            const selectNumber = (val) => {
+                if (!activeKeypad) return;
+                const { gridIdx, cellIdx } = activeKeypad;
+                const newUserGrids = [...userGrids];
+                newUserGrids[gridIdx] = [...newUserGrids[gridIdx]];
+                newUserGrids[gridIdx][cellIdx] = val;
+                setUserGrids(newUserGrids);
+                setActiveKeypad(null);
+            };
+
+            const clearCell = () => {
+                if (!activeKeypad) return;
+                const { gridIdx, cellIdx } = activeKeypad;
+                const newUserGrids = [...userGrids];
+                newUserGrids[gridIdx] = [...newUserGrids[gridIdx]];
+                newUserGrids[gridIdx][cellIdx] = null;
+                setUserGrids(newUserGrids);
+                setActiveKeypad(null);
+            };
+
+            const checkAnswers = () => {
+                const requiredCount = getRequiredCount();
+                let allFilled = true;
+                let correctCount = 0;
+
+                userGrids.forEach((grid, idx) => {
+                    const filledCount = grid.filter(v => v !== null).length;
+                    if (filledCount < requiredCount) allFilled = false;
+                    if (JSON.stringify(grid) === JSON.stringify(targetGrids[idx])) {
+                        correctCount++;
+                    }
+                });
+
+                setIsChecking(true);
+                if (!allFilled) {
+                    setCheckResult({ type: 'info', text: '還有題目未答完！請繼續完成。' });
+                } else if (correctCount === totalGrids) {
+                    setCheckResult({ type: 'success', text: '太棒了！全部都答對了！' });
+                } else {
+                    setCheckResult({ type: 'error', text: '答題有錯，請檢查亮紅光的格子。' });
+                }
+            };
+
+            const handleExportImage = async () => {
+                if (isExporting || !window.html2canvas) return;
+                setIsExporting(true);
+                const exportArea = exportContainerRef.current;
+                exportArea.style.display = 'block';
+                try {
+                    const canvas = await html2canvas(exportArea, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL("image/png", 1.0);
+                    link.download = `專注力學習單_${gridSize}x${gridSize}.png`;
+                    link.click();
+                } catch (err) { console.error(err); }
+                finally { exportArea.style.display = 'none'; setIsExporting(false); }
+            };
+
+            const getKeypadStyle = () => {
+                if (!activeKeypad) return { display: 'none' };
+                const { rect } = activeKeypad;
+                const keypadWidth = gridSize === 3 ? 190 : 230;
+                const keypadHeight = gridSize === 3 ? 240 : 310;
+                let left = rect.right + 15;
+                let top = rect.top + (rect.height / 2) - (keypadHeight / 2);
+                if (left + keypadWidth > window.innerWidth - 15) {
+                    left = rect.left - keypadWidth - 15;
+                }
+                if (left < 15) {
+                    left = 15;
+                    top = rect.bottom + 15;
+                }
+                top = Math.max(15, Math.min(top, window.innerHeight - keypadHeight - 15));
+                return { left: `${left}px`, top: `${top}px`, width: `${keypadWidth}px` };
+            };
+
+            return (
+                <div className="min-h-screen p-2 sm:p-4 selection:bg-orange-200 relative">
+                    
+                    {/* --- 使用說明彈窗 --- */}
+                    {showGuide && (
+                        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md no-print" onClick={() => setShowGuide(false)}>
+                            <div className="bg-white rounded-[2.5rem] max-w-lg w-full shadow-2xl border-4 border-[#f9ebbe] fade-in relative flex flex-col max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="p-6 sm:p-8 pb-4 flex justify-between items-center border-b border-orange-50">
+                                    <h2 className="text-xl sm:text-2xl font-black text-orange-950 flex items-center gap-2"><Icons.Info className="w-6 h-6 text-[#ff8c42]" /> 快速指南</h2>
+                                    <button onClick={() => setShowGuide(false)} className="text-orange-900/40 hover:text-[#ff8c42]"><Icons.X className="w-7 h-7" /></button>
+                                </div>
+                                <div className="flex-grow overflow-y-auto px-6 sm:px-10 py-8 custom-scrollbar">
+                                    <div className="space-y-6 text-[#433422]">
+                                        <header>
+                                            <p className="font-bold text-lg leading-relaxed">🧩 這是一款專為 4-8 歲孩童設計的「圖格對應」訓練工具，用來提升孩子的專注力與視覺空間感。</p>
+                                        </header>
+                                        
+                                        <section>
+                                            <h3 className="text-xl font-black text-[#ff8c42] mb-3 flex items-center gap-2">💡 為什麼要玩這個？</h3>
+                                            <ul className="space-y-2 font-bold">
+                                                <li className="flex gap-2"><span>•</span> <span>訓練專注力：孩子必須在雜亂中搜尋目標，提升視覺搜尋效率。</span></li>
+                                                <li className="flex gap-2"><span>•</span> <span>建立空間感：練習左右圖表間的座標對應邏輯，強化空間位置感。</span></li>
+                                            </ul>
+                                        </section>
+
+                                        <section>
+                                            <h3 className="text-xl font-black text-[#ff8c42] mb-3 flex items-center gap-2">🕹️ 遊戲四部曲</h3>
+                                            <ol className="space-y-3 font-bold">
+                                                <li className="flex gap-3"><span className="bg-orange-100 text-[#ff8c42] w-6 h-6 rounded-full flex items-center justify-center shrink-0">1</span> <span>看目標：觀察最上方「題目觀察區」中圖案或數字的分佈位置。</span></li>
+                                                <li className="flex gap-3"><span className="bg-orange-100 text-[#ff8c42] w-6 h-6 rounded-full flex items-center justify-center shrink-0">2</span> <span>找位置：在下方「作答複製區」中找到與題目相同座標的格子。</span></li>
+                                                <li className="flex gap-3"><span className="bg-orange-100 text-[#ff8c42] w-6 h-6 rounded-full flex items-center justify-center shrink-0">3</span> <span>對數字：若為數字模式，點擊格子後會彈出鍵盤供您選擇正確密碼。</span></li>
+                                                <li className="flex gap-3"><span className="bg-orange-100 text-[#ff8c42] w-6 h-6 rounded-full flex items-center justify-center shrink-0">4</span> <span>填答案：完成所有格子後點擊「核對答案」，檢查是否全部正確。</span></li>
+                                            </ol>
+                                        </section>
+
+                                        <section>
+                                            <h3 className="text-xl font-black text-[#ff8c42] mb-3 flex items-center gap-2">🛠️ 教師與家長控制項</h3>
+                                            <ul className="space-y-2 font-bold">
+                                                <li className="flex gap-2"><span>•</span> <span>難度切換：3x3 (入門) / 4x4 (進階挑戰)。</span></li>
+                                                <li className="flex gap-2"><span>•</span> <span>內容設定：切換「圓形圖案」或「123數字」對應模式。</span></li>
+                                                <li className="flex gap-2"><span>•</span> <span>換下一題：一鍵生成全新隨機題目，內容永遠不重複。</span></li>
+                                                <li className="flex gap-2"><span>•</span> <span>輸出圖片：下載符合 A4 比例的專業練習單圖片。</span></li>
+                                            </ul>
+                                        </section>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-orange-50 text-center">
+                                    <button onClick={() => setShowGuide(false)} className="px-10 py-2 bg-[#ff8c42] text-white rounded-xl font-black shadow-md">了解了，開始練習！</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 核對結果提示窗 */}
+                    {checkResult && (
+                        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm no-print" onClick={() => setCheckResult(null)}>
+                            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border-4 border-[#f9ebbe] text-center fade-in" onClick={e => e.stopPropagation()}>
+                                <div className="text-6xl mb-4">{checkResult.type === 'success' ? '🎉' : '💡'}</div>
+                                <h2 className="text-2xl font-black text-orange-950 mb-6">{checkResult.text}</h2>
+                                <button onClick={() => setCheckResult(null)} className="w-full py-3 bg-[#ff8c42] text-white rounded-xl font-black shadow-[0_4px_0_#d35400] active:translate-y-1">我知道了</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 懸浮數字鍵盤 */}
+                    {activeKeypad && (
+                        <div className="fixed inset-0 z-[2000] no-print bg-black/5" onClick={() => setActiveKeypad(null)}>
+                            <div className="floating-keypad fade-in" style={getKeypadStyle()} onClick={e => e.stopPropagation()}>
+                                <div className={`grid gap-2 ${gridSize === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                                    {Array.from({ length: gridSize === 3 ? 9 : 16 }, (_, i) => i + 1).map(n => (
+                                        <button 
+                                            key={n} 
+                                            onClick={() => selectNumber(n)}
+                                            className={`${gridSize === 3 ? 'w-12 h-12 text-2xl' : 'w-10 h-10 text-xl'} bg-orange-50 hover:bg-[#ff8c42] hover:text-white text-orange-950 font-black rounded-xl transition-all shadow-sm active:scale-90 border-2 border-orange-100 flex items-center justify-center`}
+                                        >
+                                            {n}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                    <button onClick={clearCell} className="flex items-center justify-center gap-2 py-3 bg-stone-100 text-stone-600 rounded-xl font-black text-sm active:scale-95"><Icons.Eraser className="w-5 h-5" /> 清除</button>
+                                    <button onClick={() => setActiveKeypad(null)} className="py-3 bg-orange-950 text-white rounded-xl font-black text-sm active:scale-95">關閉</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="max-w-6xl mx-auto bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-[8px] sm:border-[12px] border-[#f9ebbe] flex flex-col no-print pb-12 relative">
+                        {/* 右上角 Info 按鈕 */}
+                        <button onClick={() => setShowGuide(true)} className="absolute top-4 right-4 bg-[#fff9e6] text-[#ff8c42] p-2 rounded-full border-2 border-[#f9ebbe] hover:bg-[#ff8c42] hover:text-white transition-all shadow-sm active:scale-95 z-20">
+                            <Icons.Info className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
+
+                        <div className="text-center pt-8 pb-1 px-4">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-[#ff8c42] rounded-full text-xs font-black tracking-widest mb-2 shadow-sm"><Icons.Sparkles className="w-3.5 h-3.5" /> 教學輔助工具</div>
+                            <h1 className="text-3xl sm:text-5xl font-[900] text-orange-950 tracking-[0.15em] mb-2 leading-tight uppercase">專注力學習單</h1>
+                            <p className="text-[#433422]/80 font-normal text-[10px] sm:text-[14px] mb-2 uppercase text-center">為小朋友打造最溫馨、專業的視覺搜尋與空間對應練習空間</p>
+                        </div>
+
+                        <div className="p-2 sm:p-6 md:p-8 pt-0 flex-grow flex flex-col items-center">
+                            <div className="w-full max-w-[1050px] flex flex-col">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-end mt-2">
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <span className="text-[13px] font-black text-orange-800">難度設定</span>
+                                        <div className="toggle-container">
+                                            <button onClick={() => setGridSize(3)} className={`toggle-btn ${gridSize === 3 ? 'active' : 'inactive'}`}>3X3</button>
+                                            <button onClick={() => setGridSize(4)} className={`toggle-btn ${gridSize === 4 ? 'active' : 'inactive'}`}>4X4</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <span className="text-[13px] font-black text-orange-800">內容設定</span>
+                                        <div className="toggle-container">
+                                            <button onClick={() => setGameMode('circle')} className={`toggle-btn ${gameMode === 'circle' ? 'active' : 'inactive'}`}>圓形</button>
+                                            <button onClick={() => setGameMode('number')} className={`toggle-btn ${gameMode === 'number' ? 'active' : 'inactive'}`}>數字</button>
+                                        </div>
+                                    </div>
+                                    <button onClick={generateNewGame} className="unified-btn bg-stone-700 hover:bg-stone-800 shadow-sm"><Icons.RefreshCw className="w-5 h-5" /> 重新產生題目</button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="flex flex-col">
+                                        <div className="area-label bg-[#ff8c42] self-start">題目觀察區</div>
+                                        <div className="bg-orange-50/50 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-4 w-full shadow-inner border border-orange-100">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
+                                                {targetGrids.map((dots, i) => <GridComponent key={`target-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} />)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <div className="area-label bg-[#433422] self-start">作答複製區</div>
+                                        <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-4 w-full shadow-inner border border-stone-200">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
+                                                {userGrids.map((dots, i) => {
+                                                    let status = null;
+                                                    if (isChecking) status = JSON.stringify(dots) === JSON.stringify(targetGrids[i]) ? 'correct' : 'wrong';
+                                                    return <GridComponent key={`user-${i}`} dots={dots} num={i+1} onCellClick={(e, cellIdx) => handleCellInteraction(e, i, cellIdx)} isInteractive={true} isTarget={false} status={status} size={gridSize} gameMode={gameMode} />;
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
+                                    <button onClick={checkAnswers} className="unified-btn bg-[#ff8c42] hover:bg-[#ff7a21] !shadow-[0_6px_0_#d35400]"><Icons.CheckCircle className="w-6 h-6" /> 核對作答答案</button>
+                                    <button onClick={handleExportImage} className="unified-btn bg-[#433422] hover:bg-[#35291b] !shadow-[0_6px_0_#2a1f14]">
+                                        {isExporting ? <Icons.RefreshCw className="w-4 h-4 animate-spin" /> : <Icons.ImageIcon className="w-6 h-6" />} {isExporting ? '處理中' : '輸出圖片'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* --- A4 導出版 (1:1.414 固定比例) --- */}
+                    <div ref={exportContainerRef} style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', height: '1131px', backgroundColor: 'white', padding: '10px 40px', border: '12px solid #f9ebbe', display: 'none', boxSizing: 'border-box', overflow: 'hidden' }}>
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                                <h1 style={{ fontSize: '38px', fontWeight: '900', color: '#433422', margin: '0 0 2px 0' }}>專注力學習單</h1>
+                                <p style={{ fontSize: '13px', color: '#433422', fontWeight: '700', marginBottom: '10px' }}>為小朋友打造最溫馨、專業的視覺搜尋與空間對應練習空間</p>
+                            </div>
+                            <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}> 
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <div className="area-label bg-[#ff8c42]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}><span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-12px)' }}>題目觀察區</span></div>
+                                    <div style={{ backgroundColor: '#fff7ed', borderRadius: '0 24px 24px 24px', padding: '12px 25px', width: '100%', boxSizing: 'border-box' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
+                                            {targetGrids.map((dots, i) => <GridComponent key={`ex-t-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} exportMode={true} />)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <div className="area-label bg-[#433422]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}><span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-12px)' }}>作答複製區</span></div>
+                                    <div style={{ backgroundColor: '#f5f5f5', borderRadius: '0 24px 24px 24px', padding: '12px 25px', width: '100%', boxSizing: 'border-box' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
+                                            {Array.from({length: 6}).map((_, i) => <GridComponent key={`ex-u-${i}`} dots={Array(gridSize * gridSize).fill(null)} num={i+1} isTarget={false} size={gridSize} gameMode={gameMode} exportMode={true} />)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
