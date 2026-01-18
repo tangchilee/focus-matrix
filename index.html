@@ -19,13 +19,25 @@
     <style>
         /* 全域字體端正 */
         * { font-family: 'Noto Serif TC', serif !important; font-style: normal !important; }
-        body { 
-            background-color: #fff7ed; 
-            -webkit-tap-highlight-color: transparent; 
-            margin: 0; 
-            padding: 0; 
-            min-height: 100vh; 
-            overflow-y: auto; /* 恢復所有裝置皆可捲動 */
+        body { background-color: #fff7ed; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; min-height: 100vh; }
+
+        /* --- 核心邏輯：針對平板觸控設備啟動滿版 (One Page) --- */
+        @media (min-width: 768px) and (max-width: 1280px) and (pointer: coarse) {
+            html, body, #root { height: 100vh; height: 100dvh; overflow: hidden; }
+            .app-container { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+            .content-flex-1 { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+            
+            /* 平板模式下：縮減不必要的間距以騰出空間 */
+            .tablet-compact-padding { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+            /* 限制格子容器的最大高度，讓其在剩餘空間內等比例縮小 */
+            .grid-item-container { max-height: 30vh; } 
+        }
+
+        /* 電腦版/預覽版（非觸控設備）恢復正常自然捲動，格子維持最大化 */
+        @media (pointer: fine), (min-width: 1281px), (max-width: 767px) {
+            .app-container { min-height: 100vh; display: block; }
+            .content-flex-1 { display: block; height: auto; }
+            .grid-item-container { max-height: none; }
         }
 
         @media print { .no-print { display: none !important; } }
@@ -65,7 +77,6 @@
             display: flex;
             height: 56px;
             width: 100%;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .toggle-btn {
             flex: 1;
@@ -129,7 +140,7 @@
                     {status === 'wrong' && <span className="text-[10px] font-bold text-rose-500 uppercase tracking-tighter leading-none">Wrong</span>}
                 </div>
                 <div 
-                    className={`grid aspect-square border-2 border-stone-800 bg-white overflow-hidden rounded-xl transition-all shadow-sm
+                    className={`grid aspect-square border-2 border-stone-800 bg-white overflow-hidden rounded-xl transition-all shadow-sm grid-cell
                         ${size === 3 ? 'grid-cols-3' : 'grid-cols-4'}
                         ${status === 'correct' ? 'ring-4 ring-emerald-100 border-emerald-500' : ''}
                         ${status === 'wrong' ? 'ring-4 ring-rose-100 border-rose-500 shadow-lg' : ''}
@@ -175,6 +186,25 @@
 
             const totalGrids = 6; 
             const getRequiredCount = () => gridSize === 3 ? 5 : 9;
+
+            // 修復平板模式下點擊外部鍵盤不消失的問題
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (activeKeypad && 
+                        !event.target.closest('.floating-keypad') && 
+                        !event.target.closest('.grid-cell')) {
+                        setActiveKeypad(null);
+                    }
+                };
+                if (activeKeypad) {
+                    document.addEventListener('mousedown', handleClickOutside);
+                    document.addEventListener('touchstart', handleClickOutside);
+                }
+                return () => {
+                    document.removeEventListener('mousedown', handleClickOutside);
+                    document.removeEventListener('touchstart', handleClickOutside);
+                };
+            }, [activeKeypad]);
 
             const generateNewGame = useCallback(() => {
                 const totalCells = gridSize * gridSize;
@@ -276,7 +306,7 @@
             };
 
             return (
-                <div className="bg-[#fff7ed] p-4 sm:p-8">
+                <div className="app-container bg-[#fff7ed]">
                     {/* 使用說明彈窗 (快速指南) */}
                     {showGuide && (
                         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md no-print" onClick={() => setShowGuide(false)}>
@@ -286,7 +316,7 @@
                                     <button onClick={() => setShowGuide(false)} className="text-orange-900/40 hover:text-[#ff8c42] transition-colors"><Icons.X className="w-7 h-7" /></button>
                                 </div>
                                 <div className="flex-grow overflow-y-auto px-6 sm:px-10 py-8 custom-scrollbar font-bold text-[#433422]">
-                                    <p className="text-lg mb-6 leading-relaxed">🧩 專注力學習單：快速指南<br/><br/>這是一款專為 4-8 歲孩童設計的「圖格對應」訓練工具，提升專注力與空間感。</p>
+                                    <p className="text-lg mb-6 leading-relaxed">🧩 專注力學習單：快速指南<br/><br/>這是一款專為 4-8 歲設計的「圖格對應」訓練工具，提升專注力與空間感。</p>
                                     <h3 className="text-xl text-[#ff8c42] mb-3">💡 為什麼要玩這個？</h3>
                                     <ul className="space-y-2 mb-6">
                                         <li>• 訓練專注力：孩子必須搜尋目標，提升視覺效率。</li>
@@ -318,8 +348,8 @@
 
                     {/* 懸浮數字鍵盤 */}
                     {activeKeypad && (
-                        <div className="fixed inset-0 z-[2000] no-print bg-black/5" onClick={() => setActiveKeypad(null)}>
-                            <div className="floating-keypad fade-in" style={getKeypadStyle()} onClick={e => e.stopPropagation()}>
+                        <div className="fixed inset-0 z-[2000] no-print bg-black/5 cursor-pointer">
+                            <div className="floating-keypad fade-in cursor-default" style={getKeypadStyle()} onClick={e => e.stopPropagation()}>
                                 <div className={`grid gap-2 ${gridSize === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                                     {Array.from({ length: gridSize === 3 ? 9 : 16 }, (_, i) => i + 1).map(n => (
                                         <button key={n} onClick={() => selectNumber(n)} className={`${gridSize === 3 ? 'w-12 h-12 text-2xl' : 'w-10 h-10 text-xl'} bg-orange-50 hover:bg-[#ff8c42] hover:text-white text-orange-950 font-black rounded-xl transition-all active:scale-90 flex items-center justify-center`}>{n}</button>
@@ -333,17 +363,19 @@
                         </div>
                     )}
 
-                    <div className="max-w-6xl mx-auto w-full bg-white sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden border-[8px] sm:border-[12px] border-[#f9ebbe] relative no-print pb-10">
+                    <div className="content-flex-1 max-w-6xl mx-auto w-full bg-white sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl border-0 sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print tablet-compact-padding">
                         <button onClick={() => setShowGuide(true)} className="absolute top-4 right-4 sm:top-8 sm:right-8 bg-[#fff9e6] text-[#ff8c42] p-2.5 rounded-full border-2 border-[#f9ebbe] hover:bg-[#ff8c42] hover:text-white transition-all shadow-sm active:scale-95 z-20"><Icons.Info className="w-6 h-6 sm:w-8 sm:h-8" /></button>
 
-                        <div className="text-center pt-10 pb-4 px-4 shrink-0">
+                        <div className="text-center pt-8 pb-4 px-4 shrink-0">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-[#ff8c42] rounded-full text-xs font-black tracking-widest mb-3 shadow-sm"><Icons.Sparkles className="w-3.5 h-3.5" /> 教學輔助工具</div>
                             <h1 className="text-3xl sm:text-5xl font-[900] text-orange-950 tracking-[0.15em] mb-2 leading-tight uppercase">專注力學習單</h1>
                             <p className="text-[#433422]/80 font-normal text-[10px] sm:text-[14px] mb-2 uppercase text-center">為小朋友打造最溫馨、專業的視覺搜尋與空間對應練習空間</p>
                         </div>
 
-                        <div className="px-3 sm:px-10 flex flex-col">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-end mt-2 shrink-0">
+                        <div className="flex-1 min-h-0 px-3 sm:px-10 pb-8 flex flex-col overflow-y-auto custom-scrollbar">
+                            
+                            {/* 控制項按鈕：調整手機版為 2 排，電腦版維持 1 排 */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 items-end mt-2 shrink-0">
                                 <div className="flex flex-col items-center gap-1.5">
                                     <span className="text-[13px] font-black text-orange-800 uppercase tracking-wider">難度設定</span>
                                     <div className="toggle-container">
@@ -354,28 +386,26 @@
                                 <div className="flex flex-col items-center gap-1.5">
                                     <span className="text-[13px] font-black text-orange-800 uppercase tracking-wider">內容設定</span>
                                     <div className="toggle-container">
-                                        <button onClick={() => setGameMode('circle')} className={`toggle-btn ${gameMode === 'circle' ? 'active' : 'inactive'}`}>圓形圖案</button>
-                                        <button onClick={() => setGameMode('number')} className={`toggle-btn ${gameMode === 'number' ? 'active' : 'inactive'}`}>數字密碼</button>
+                                        <button onClick={() => setGameMode('circle')} className={`toggle-btn ${gameMode === 'circle' ? 'active' : 'inactive'}`}>圓形</button>
+                                        <button onClick={() => setGameMode('number')} className={`toggle-btn ${gameMode === 'number' ? 'active' : 'inactive'}`}>數字</button>
                                     </div>
                                 </div>
-                                <button onClick={generateNewGame} className="unified-btn bg-stone-700 hover:bg-stone-800 shadow-sm transition-all"><Icons.RefreshCw className="w-5 h-5" /> 重新產生題目</button>
+                                <button onClick={generateNewGame} className="col-span-2 md:col-span-1 unified-btn bg-stone-700 hover:bg-stone-800 shadow-sm transition-all"><Icons.RefreshCw className="w-5 h-5" /> 重新產生題目</button>
                             </div>
 
                             <div className="space-y-6 flex-1 min-h-0">
                                 <div className="flex flex-col">
-                                    {/* 標籤文字垂直置中優化：使用 translateY(-2px) */}
                                     <div className="area-label bg-[#ff8c42] self-start"><span style={{transform: 'translateY(-2px)'}}>題目觀察區</span></div>
-                                    <div className="bg-orange-50/50 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-orange-100 shadow-inner">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="bg-orange-50/50 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-orange-100 shadow-inner grid-item-container overflow-hidden">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
                                             {targetGrids.map((dots, i) => <GridComponent key={`target-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} />)}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col">
-                                    {/* 標籤文字垂直置中優化：使用 translateY(-2px) */}
                                     <div className="area-label bg-[#433422] self-start"><span style={{transform: 'translateY(-2px)'}}>作答複製區</span></div>
-                                    <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-stone-200 shadow-inner">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-stone-200 shadow-inner grid-item-container overflow-hidden">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
                                             {userGrids.map((dots, i) => {
                                                 let status = null;
                                                 if (isChecking) status = JSON.stringify(dots) === JSON.stringify(targetGrids[i]) ? 'correct' : 'wrong';
@@ -407,7 +437,7 @@
                                     <div className="area-label bg-[#ff8c42]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}><span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-2px)' }}>題目觀察區</span></div>
                                     <div style={{ backgroundColor: '#fff7ed', borderRadius: '0 24px 24px 24px', padding: '12px 25px', width: '100%', boxSizing: 'border-box' }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
-                                            {targetGrids.map((dots, i) => <GridComponent key={`ex-t-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} exportMode={true} />)}
+                                            {targetGrids.map((dots, i) => <GridComponent key={`target-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} exportMode={true} />)}
                                         </div>
                                     </div>
                                 </div>
