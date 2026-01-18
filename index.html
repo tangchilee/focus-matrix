@@ -77,6 +77,7 @@
             display: flex;
             height: 56px;
             width: 100%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .toggle-btn {
             flex: 1;
@@ -363,7 +364,8 @@
                         </div>
                     )}
 
-                    <div className="content-flex-1 max-w-6xl mx-auto w-full bg-white sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl border-0 sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print tablet-compact-padding">
+                    {/* 修正內容：手機版邊框與圓角顯示優化 */}
+                    <div className="content-flex-1 max-w-6xl mx-auto w-full bg-white rounded-[2rem] sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl border-[6px] sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print tablet-compact-padding">
                         <button onClick={() => setShowGuide(true)} className="absolute top-4 right-4 sm:top-8 sm:right-8 bg-[#fff9e6] text-[#ff8c42] p-2.5 rounded-full border-2 border-[#f9ebbe] hover:bg-[#ff8c42] hover:text-white transition-all shadow-sm active:scale-95 z-20"><Icons.Info className="w-6 h-6 sm:w-8 sm:h-8" /></button>
 
                         <div className="text-center pt-8 pb-4 px-4 shrink-0">
@@ -404,7 +406,7 @@
                                 </div>
                                 <div className="flex flex-col">
                                     <div className="area-label bg-[#433422] self-start"><span style={{transform: 'translateY(-2px)'}}>作答複製區</span></div>
-                                    <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-stone-200 shadow-inner grid-item-container overflow-hidden">
+                                    <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-4 border border-stone-200 shadow-inner grid-item-container overflow-hidden">
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
                                             {userGrids.map((dots, i) => {
                                                 let status = null;
