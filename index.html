@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>專注力學習單 - 專業強化版</title>
+    <title>鏡像小精靈：專注力挑戰遊戲</title>
     <!-- 載入 Noto Serif TC 字體 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <!-- 載入 Tailwind CSS -->
@@ -19,30 +19,18 @@
     <style>
         /* 全域字體端正 */
         * { font-family: 'Noto Serif TC', serif !important; font-style: normal !important; }
-        body { background-color: #fff7ed; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; min-height: 100vh; }
-
-        /* --- 核心邏輯：針對平板觸控設備啟動滿版 (One Page) --- */
-        @media (min-width: 768px) and (max-width: 1280px) and (pointer: coarse) {
-            html, body, #root { height: 100vh; height: 100dvh; overflow: hidden; }
-            .app-container { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
-            .content-flex-1 { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-            
-            /* 平板模式下：縮減不必要的間距以騰出空間 */
-            .tablet-compact-padding { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-            /* 限制格子容器的最大高度，讓其在剩餘空間內等比例縮小 */
-            .grid-item-container { max-height: 30vh; } 
-        }
-
-        /* 電腦版/預覽版（非觸控設備）恢復正常自然捲動，格子維持最大化 */
-        @media (pointer: fine), (min-width: 1281px), (max-width: 767px) {
-            .app-container { min-height: 100vh; display: block; }
-            .content-flex-1 { display: block; height: auto; }
-            .grid-item-container { max-height: none; }
+        body { 
+            background-color: #fff7ed; 
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh; 
+            overflow-y: auto; /* 所有裝置皆恢復自然捲動 */
         }
 
         @media print { .no-print { display: none !important; } }
         button { outline: none; }
-        .fade-in { animation: fadeIn 0.2s ease-out; }
+        .fade-in { animation: fadeIn 0.15s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -105,6 +93,7 @@
         }
         .unified-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.12); }
 
+        /* 懸浮數字鍵盤 */
         .floating-keypad {
             position: fixed;
             z-index: 2000;
@@ -127,7 +116,7 @@
             Info: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
             X: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
             Sparkles: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 3 1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3Z" /></svg>,
-            RefreshCw: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>,
+            RefreshCw: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
             ImageIcon: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>,
             CheckCircle: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             Eraser: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21Z"/><path d="m22 21-2 0"/><path d="m5 11 9 9"/></svg>
@@ -188,7 +177,7 @@
             const totalGrids = 6; 
             const getRequiredCount = () => gridSize === 3 ? 5 : 9;
 
-            // 修復平板模式下點擊外部鍵盤不消失的問題
+            // 全域監聽點擊外部關閉小鍵盤
             useEffect(() => {
                 const handleClickOutside = (event) => {
                     if (activeKeypad && 
@@ -287,7 +276,7 @@
                     const canvas = await html2canvas(exportArea, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
                     const link = document.createElement('a');
                     link.href = canvas.toDataURL("image/png", 1.0);
-                    link.download = `專注力學習單_${gridSize}x${gridSize}.png`;
+                    link.download = `鏡像小精靈_${gridSize}x${gridSize}.png`;
                     link.click();
                 } catch (err) { console.error(err); }
                 finally { exportArea.style.display = 'none'; setIsExporting(false); }
@@ -307,8 +296,8 @@
             };
 
             return (
-                <div className="app-container bg-[#fff7ed]">
-                    {/* 使用說明彈窗 (快速指南) */}
+                <div className="p-4 sm:p-8">
+                    {/* 使用說明彈窗 */}
                     {showGuide && (
                         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md no-print" onClick={() => setShowGuide(false)}>
                             <div className="bg-white rounded-[2.5rem] max-w-lg w-full shadow-2xl border-4 border-[#f9ebbe] fade-in relative flex flex-col max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -317,7 +306,7 @@
                                     <button onClick={() => setShowGuide(false)} className="text-orange-900/40 hover:text-[#ff8c42] transition-colors"><Icons.X className="w-7 h-7" /></button>
                                 </div>
                                 <div className="flex-grow overflow-y-auto px-6 sm:px-10 py-8 custom-scrollbar font-bold text-[#433422]">
-                                    <p className="text-lg mb-6 leading-relaxed">🧩 專注力學習單：快速指南<br/><br/>這是一款專為 4-8 歲設計的「圖格對應」訓練工具，提升專注力與空間感。</p>
+                                    <p className="text-lg mb-6 leading-relaxed">🧩 鏡像小精靈：快速指南<br/><br/>這是一款專為 4-8 歲設計的「圖格對應」訓練工具，提升專注力與空間感。</p>
                                     <h3 className="text-xl text-[#ff8c42] mb-3">💡 為什麼要玩這個？</h3>
                                     <ul className="space-y-2 mb-6">
                                         <li>• 訓練專注力：孩子必須搜尋目標，提升視覺效率。</li>
@@ -364,19 +353,17 @@
                         </div>
                     )}
 
-                    {/* 修正內容：手機版邊框與圓角顯示優化 */}
-                    <div className="content-flex-1 max-w-6xl mx-auto w-full bg-white rounded-[2rem] sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl border-[6px] sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print tablet-compact-padding">
+                    <div className="max-w-6xl mx-auto w-full bg-white rounded-[2rem] sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden border-[6px] sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print pb-10">
                         <button onClick={() => setShowGuide(true)} className="absolute top-4 right-4 sm:top-8 sm:right-8 bg-[#fff9e6] text-[#ff8c42] p-2.5 rounded-full border-2 border-[#f9ebbe] hover:bg-[#ff8c42] hover:text-white transition-all shadow-sm active:scale-95 z-20"><Icons.Info className="w-6 h-6 sm:w-8 sm:h-8" /></button>
 
-                        <div className="text-center pt-8 pb-4 px-4 shrink-0">
+                        <div className="text-center pt-10 pb-4 px-4 shrink-0">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-[#ff8c42] rounded-full text-xs font-black tracking-widest mb-3 shadow-sm"><Icons.Sparkles className="w-3.5 h-3.5" /> 教學輔助工具</div>
-                            <h1 className="text-3xl sm:text-5xl font-[900] text-orange-950 tracking-[0.15em] mb-2 leading-tight uppercase">專注力學習單</h1>
+                            <h1 className="text-3xl sm:text-5xl font-[900] text-orange-950 tracking-[0.15em] mb-2 leading-tight uppercase">鏡像小精靈</h1>
                             <p className="text-[#433422]/80 font-normal text-[10px] sm:text-[14px] mb-2 uppercase text-center">為小朋友打造最溫馨、專業的視覺搜尋與空間對應練習空間</p>
                         </div>
 
-                        <div className="flex-1 min-h-0 px-3 sm:px-10 pb-8 flex flex-col overflow-y-auto custom-scrollbar">
-                            
-                            {/* 控制項按鈕：調整手機版為 2 排，電腦版維持 1 排 */}
+                        <div className="px-3 sm:px-10 flex flex-col">
+                            {/* 控制項按鈕：手機版 2 排優化 */}
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 items-end mt-2 shrink-0">
                                 <div className="flex flex-col items-center gap-1.5">
                                     <span className="text-[13px] font-black text-orange-800 uppercase tracking-wider">難度設定</span>
@@ -397,17 +384,19 @@
 
                             <div className="space-y-6 flex-1 min-h-0">
                                 <div className="flex flex-col">
+                                    {/* 文字置中優化 */}
                                     <div className="area-label bg-[#ff8c42] self-start"><span style={{transform: 'translateY(-2px)'}}>題目觀察區</span></div>
-                                    <div className="bg-orange-50/50 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-orange-100 shadow-inner grid-item-container overflow-hidden">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
+                                    <div className="bg-orange-50/50 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-orange-100 shadow-inner">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {targetGrids.map((dots, i) => <GridComponent key={`target-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} />)}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col">
+                                    {/* 文字置中優化 */}
                                     <div className="area-label bg-[#433422] self-start"><span style={{transform: 'translateY(-2px)'}}>作答複製區</span></div>
-                                    <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-4 border border-stone-200 shadow-inner grid-item-container overflow-hidden">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
+                                    <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-4 border border-stone-200 shadow-inner">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {userGrids.map((dots, i) => {
                                                 let status = null;
                                                 if (isChecking) status = JSON.stringify(dots) === JSON.stringify(targetGrids[i]) ? 'correct' : 'wrong';
@@ -418,7 +407,7 @@
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 shrink-0 pb-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10 shrink-0 pb-2">
                                 <button onClick={checkAnswers} className="unified-btn bg-[#ff8c42] hover:bg-[#ff7a21] !shadow-[0_6px_0_#d35400] transition-all"><Icons.CheckCircle className="w-6 h-6" /> 核對作答答案</button>
                                 <button onClick={handleExportImage} className="unified-btn bg-[#433422] hover:bg-[#35291b] !shadow-[0_6px_0_#2a1f14] transition-all">
                                     {isExporting ? <Icons.RefreshCw className="w-5 h-5 animate-spin" /> : <Icons.ImageIcon className="w-6 h-6" />} {isExporting ? '處理中' : '輸出圖片'}
@@ -431,7 +420,7 @@
                     <div ref={exportContainerRef} style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', height: '1131px', backgroundColor: 'white', padding: '10px 40px', border: '12px solid #f9ebbe', display: 'none', boxSizing: 'border-box', overflow: 'hidden' }}>
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
                             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-                                <h1 style={{ fontSize: '38px', fontWeight: '900', color: '#433422', margin: '0 0 2px 0' }}>專注力學習單</h1>
+                                <h1 style={{ fontSize: '38px', fontWeight: '900', color: '#433422', margin: '0 0 2px 0' }}>鏡像小精靈</h1>
                                 <p style={{ fontSize: '13px', color: '#433422', fontWeight: '700', marginBottom: '10px' }}>為小朋友打造最溫馨、專業的視覺搜尋與空間對應練習空間</p>
                             </div>
                             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}> 
@@ -439,7 +428,7 @@
                                     <div className="area-label bg-[#ff8c42]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}><span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-2px)' }}>題目觀察區</span></div>
                                     <div style={{ backgroundColor: '#fff7ed', borderRadius: '0 24px 24px 24px', padding: '12px 25px', width: '100%', boxSizing: 'border-box' }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
-                                            {targetGrids.map((dots, i) => <GridComponent key={`target-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} exportMode={true} />)}
+                                            {targetGrids.map((dots, i) => <GridComponent key={`ex-t-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} exportMode={true} />)}
                                         </div>
                                     </div>
                                 </div>
