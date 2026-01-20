@@ -25,7 +25,7 @@
             margin: 0; 
             padding: 0; 
             min-height: 100vh; 
-            overflow-y: auto; /* 所有裝置皆恢復自然捲動 */
+            overflow-y: auto; 
         }
 
         @media print { .no-print { display: none !important; } }
@@ -93,7 +93,6 @@
         }
         .unified-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.12); }
 
-        /* 懸浮數字鍵盤 */
         .floating-keypad {
             position: fixed;
             z-index: 2000;
@@ -103,6 +102,14 @@
             box-shadow: 0 25px 60px rgba(0,0,0,0.3);
             border: 4px solid #ff8c42;
             pointer-events: auto;
+        }
+
+        /* 專門為匯出設計的圓點樣式，避開 html2canvas 對 SVG 的相容問題 */
+        .export-dot {
+            width: 70%;
+            height: 70%;
+            border-radius: 9999px;
+            display: block;
         }
     </style>
 </head>
@@ -146,7 +153,16 @@
                         >
                             {val !== null && (
                                 gameMode === 'circle' ? (
-                                    <div className="w-[70%] h-[70%] rounded-full dot-pop" style={{ backgroundColor: isTarget ? '#1c1917' : '#ff8c42' }} />
+                                    /* 回歸強化版 CSS 圓點，確保 html2canvas 穩定截取 */
+                                    <div 
+                                        className={`rounded-full ${exportMode ? '' : 'dot-pop'}`}
+                                        style={{ 
+                                            width: '70%', 
+                                            height: '70%', 
+                                            backgroundColor: isTarget ? '#1c1917' : '#ff8c42',
+                                            display: 'block'
+                                        }} 
+                                    />
                                 ) : (
                                     <span className={`font-black dot-pop leading-none flex items-center justify-center
                                         ${size === 3 ? 'text-2xl sm:text-5xl' : 'text-xl sm:text-3xl'}
@@ -177,7 +193,7 @@
             const totalGrids = 6; 
             const getRequiredCount = () => gridSize === 3 ? 5 : 9;
 
-            // 全域監聽點擊外部關閉小鍵盤
+            // 監聽外部點擊關閉小鍵盤
             useEffect(() => {
                 const handleClickOutside = (event) => {
                     if (activeKeypad && 
@@ -296,8 +312,8 @@
             };
 
             return (
-                <div className="p-4 sm:p-8">
-                    {/* 使用說明彈窗 */}
+                <div className="app-container bg-[#fff7ed]">
+                    {/* 使用說明彈窗 (快速指南) */}
                     {showGuide && (
                         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md no-print" onClick={() => setShowGuide(false)}>
                             <div className="bg-white rounded-[2.5rem] max-w-lg w-full shadow-2xl border-4 border-[#f9ebbe] fade-in relative flex flex-col max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -353,17 +369,16 @@
                         </div>
                     )}
 
-                    <div className="max-w-6xl mx-auto w-full bg-white rounded-[2rem] sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden border-[6px] sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print pb-10">
+                    <div className="content-flex-1 max-w-6xl mx-auto w-full bg-white rounded-[2rem] sm:rounded-[3rem] md:rounded-[2.5rem] shadow-2xl border-[6px] sm:border-[8px] md:border-[12px] border-[#f9ebbe] relative no-print tablet-compact-padding">
                         <button onClick={() => setShowGuide(true)} className="absolute top-4 right-4 sm:top-8 sm:right-8 bg-[#fff9e6] text-[#ff8c42] p-2.5 rounded-full border-2 border-[#f9ebbe] hover:bg-[#ff8c42] hover:text-white transition-all shadow-sm active:scale-95 z-20"><Icons.Info className="w-6 h-6 sm:w-8 sm:h-8" /></button>
 
-                        <div className="text-center pt-10 pb-4 px-4 shrink-0">
+                        <div className="text-center pt-8 pb-4 px-4 shrink-0">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-[#ff8c42] rounded-full text-xs font-black tracking-widest mb-3 shadow-sm"><Icons.Sparkles className="w-3.5 h-3.5" /> 教學輔助工具</div>
                             <h1 className="text-3xl sm:text-5xl font-[900] text-orange-950 tracking-[0.15em] mb-2 leading-tight uppercase">鏡像小精靈</h1>
                             <p className="text-[#433422]/80 font-normal text-[10px] sm:text-[14px] mb-2 uppercase text-center">為小朋友打造最溫馨、專業的視覺搜尋與空間對應練習空間</p>
                         </div>
 
-                        <div className="px-3 sm:px-10 flex flex-col">
-                            {/* 控制項按鈕：手機版 2 排優化 */}
+                        <div className="flex-1 min-h-0 px-3 sm:px-10 pb-8 flex flex-col overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 items-end mt-2 shrink-0">
                                 <div className="flex flex-col items-center gap-1.5">
                                     <span className="text-[13px] font-black text-orange-800 uppercase tracking-wider">難度設定</span>
@@ -384,19 +399,17 @@
 
                             <div className="space-y-6 flex-1 min-h-0">
                                 <div className="flex flex-col">
-                                    {/* 文字置中優化 */}
                                     <div className="area-label bg-[#ff8c42] self-start"><span style={{transform: 'translateY(-2px)'}}>題目觀察區</span></div>
                                     <div className="bg-orange-50/50 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-5 border border-orange-100 shadow-inner">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
                                             {targetGrids.map((dots, i) => <GridComponent key={`target-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} />)}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col">
-                                    {/* 文字置中優化 */}
                                     <div className="area-label bg-[#433422] self-start"><span style={{transform: 'translateY(-2px)'}}>作答複製區</span></div>
                                     <div className="bg-stone-100/70 rounded-b-[24px] rounded-r-[24px] p-2 sm:p-4 border border-stone-200 shadow-inner">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
                                             {userGrids.map((dots, i) => {
                                                 let status = null;
                                                 if (isChecking) status = JSON.stringify(dots) === JSON.stringify(targetGrids[i]) ? 'correct' : 'wrong';
@@ -407,7 +420,7 @@
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10 shrink-0 pb-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 shrink-0 pb-2">
                                 <button onClick={checkAnswers} className="unified-btn bg-[#ff8c42] hover:bg-[#ff7a21] !shadow-[0_6px_0_#d35400] transition-all"><Icons.CheckCircle className="w-6 h-6" /> 核對作答答案</button>
                                 <button onClick={handleExportImage} className="unified-btn bg-[#433422] hover:bg-[#35291b] !shadow-[0_6px_0_#2a1f14] transition-all">
                                     {isExporting ? <Icons.RefreshCw className="w-5 h-5 animate-spin" /> : <Icons.ImageIcon className="w-6 h-6" />} {isExporting ? '處理中' : '輸出圖片'}
@@ -416,7 +429,7 @@
                         </div>
                     </div>
 
-                    {/* A4 導出版 (隱藏) */}
+                    {/* --- A4 導出版 (隱藏區塊) --- */}
                     <div ref={exportContainerRef} style={{ position: 'fixed', left: '-9999px', top: '0', width: '800px', height: '1131px', backgroundColor: 'white', padding: '10px 40px', border: '12px solid #f9ebbe', display: 'none', boxSizing: 'border-box', overflow: 'hidden' }}>
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
                             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
@@ -425,7 +438,10 @@
                             </div>
                             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}> 
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <div className="area-label bg-[#ff8c42]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}><span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-2px)' }}>題目觀察區</span></div>
+                                    {/* 核心修正 2：文字上移改為 -10px 達成匯出圖檔標籤內完美垂直置中 */}
+                                    <div className="area-label bg-[#ff8c42]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}>
+                                        <span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-10px)' }}>題目觀察區</span>
+                                    </div>
                                     <div style={{ backgroundColor: '#fff7ed', borderRadius: '0 24px 24px 24px', padding: '12px 25px', width: '100%', boxSizing: 'border-box' }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
                                             {targetGrids.map((dots, i) => <GridComponent key={`ex-t-${i}`} dots={dots} num={i+1} isTarget={true} size={gridSize} gameMode={gameMode} exportMode={true} />)}
@@ -433,7 +449,10 @@
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <div className="area-label bg-[#433422]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}><span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-2px)' }}>作答複製區</span></div>
+                                    {/* 核心修正 2：文字上移改為 -10px 達成匯出圖檔標籤內完美垂直置中 */}
+                                    <div className="area-label bg-[#433422]" style={{ height: '32px', width: '140px', alignSelf: 'flex-start' }}>
+                                        <span style={{ fontWeight: '900', fontSize: '15px', transform: 'translateY(-10px)' }}>作答複製區</span>
+                                    </div>
                                     <div style={{ backgroundColor: '#f5f5f5', borderRadius: '0 24px 24px 24px', padding: '12px 25px', width: '100%', boxSizing: 'border-box' }}>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px' }}>
                                             {Array.from({length: 6}).map((_, i) => <GridComponent key={`ex-u-${i}`} dots={Array(gridSize * gridSize).fill(null)} num={i+1} isTarget={false} size={gridSize} gameMode={gameMode} exportMode={true} />)}
